@@ -97,7 +97,6 @@ int main (int argc, char *argv[])
                  printf ("debug: FPF value is %s\n", parsed_line[6]);
 #endif
 #if 1 /*Parse Dofid's picture*/
-                 //Dofid = atoi(parsed_line[6]);
                  sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
                  sscanf(BufferDofid, "%x\n", &Dofid);
                  Dofid = Dofid - 0x1000;
