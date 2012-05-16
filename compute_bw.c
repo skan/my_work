@@ -20,6 +20,14 @@ typedef struct stream_params_s
    int  TotalPace;
 }stream_params_t;
 
+typedef struct overall_results_s
+{
+   int  Dofid;
+   int  Pace;
+   int  Tranfert;
+   int  Bandwidth;
+}overall_results_t;
+
 //int main ()
 int main (int argc, char *argv[])
 {
@@ -40,14 +48,11 @@ int main (int argc, char *argv[])
    int                  next_null            = 0;
    int                  IsStartOfPicture     = 0;
    int                  IsStartOfStream      = 0;
+   int                  IsFpfEndFound        = 0;
    int                  PictureNumber        = 0;
    picture_params_t     picture;
    stream_params_t      stream;
-   int                  IsFpfEndFound        = 0;
-   int                  ResultBandwith [2000];
-   int                  ResultPace [2000];
-   int                  ResultTranfert [2000];
-   int                  ResultDofid[2000];
+   overall_results_t    result [2000];
    unsigned long long   GlobalTranfer        = 0;
    char                 BufResult[10000];
    unsigned long long   CumulatedBytes       = 0;
@@ -243,10 +248,10 @@ int main (int argc, char *argv[])
                          printf ("\t Dofid = %d\n", Dofid);
 
 #endif
-                         ResultBandwith[PictureNumber-1] = picture.Bandwidth;
-                         ResultPace[PictureNumber-1]     = picture.TotalPace;
-                         ResultTranfert[PictureNumber-1] = picture.TotalBytes;
-                         ResultDofid [PictureNumber-1]   = Dofid;
+                         result[PictureNumber-1].Bandwidth = picture.Bandwidth;
+                         result[PictureNumber-1].Pace      = picture.TotalPace;
+                         result[PictureNumber-1].Tranfert  = picture.TotalBytes;
+                         result[PictureNumber-1].Dofid     = Dofid;
 
                          IsPictureFound      = 0;
                          next_null           = 0;
@@ -284,22 +289,22 @@ int main (int argc, char *argv[])
       fprintf(fichier, "%s", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", ResultDofid[i]);
+         fprintf(fichier, ",%d", result[i].Dofid);
       }
       fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", ResultTranfert[i]);
+         fprintf(fichier, ",%d", result[i].Tranfert);
       }
       fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", ResultPace[i]);
+         fprintf(fichier, ",%d", result[i].Pace);
       }
       fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", ResultBandwith[i]);
+         fprintf(fichier, ",%d", result[i].Bandwidth);
       }
       fclose(fichier);
    }
@@ -311,22 +316,22 @@ int main (int argc, char *argv[])
       fprintf(fichier, "%s", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", ResultDofid[i]);
+         fprintf(fichier, ",%d", result[i].Dofid);
       }
       fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", ResultTranfert[i]);
+         fprintf(fichier, ",%d", result[i].Tranfert);
       }
       fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", ResultPace[i]);
+         fprintf(fichier, ",%d", result[i].Pace);
       }
       fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", ResultBandwith[i]);
+         fprintf(fichier, ",%d", result[i].Bandwidth);
       } 
       fprintf(fichier, "\n\n");
       fclose(fichier);
