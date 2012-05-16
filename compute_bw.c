@@ -43,24 +43,23 @@ int main (int argc, char *argv[])
    int                  paces                = 0;
    char                 stream_name [200];
    char                 LogFileName [200];
-   int                  IsPictureFound       = 0;
    int                  previous_null        = 0;
    int                  next_null            = 0;
+   int                  IsPictureFound       = 0;
    int                  IsStartOfPicture     = 0;
    int                  IsStartOfStream      = 0;
    int                  IsFpfEndFound        = 0;
+   int                  IsDofidFound         = 0;
    int                  PictureNumber        = 0;
    picture_params_t     picture;
    stream_params_t      stream;
    overall_results_t    result [2000];
    unsigned long long   GlobalTranfer        = 0;
-   char                 BufResult[10000];
    unsigned long long   CumulatedBytes       = 0;
    unsigned long long   TabCumulatedBytes[10] = {0};
    int                  TabCumulatedPaces[10] = {0};
    int                  Dofid                = 0;
    char                 BufferDofid [7];
-   int                  IsDofidFound         = 0;
 
 #if 0
    fichier = fopen("Data_Sbag_11-05-12_21-39-43.csv", "r");
