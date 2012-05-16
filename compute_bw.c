@@ -5,6 +5,21 @@
 #define CSV_COLUMN_NUMBER 20
 #define DEBUG 2
 
+typedef struct picture_params_s
+{
+   int    PaceStart;
+   int    PaceEnd;
+   int    TotalPace;
+   int    TotalBytes;
+   float  Bandwidth;
+}picture_params_t;
+
+typedef struct stream_params_s
+{
+   int  PaceStart;
+   int  TotalPace;
+}stream_params_t;
+
 //int main ()
 int main (int argc, char *argv[])
 {
@@ -25,14 +40,9 @@ int main (int argc, char *argv[])
    int                  next_null            = 0;
    int                  IsStartOfPicture     = 0;
    int                  IsStartOfStream      = 0;
-   int                  StreamPaceStart      = 0;
-   int                  StreamTotalPace      = 0;
    int                  PictureNumber        = 0;
-   int                  PicturePaceStart     = 0;
-   int                  PicturePaceEnd       = 0;
-   int                  PictureTotalBytes    = 0;
-   int                  PictureTotalPace     = 0;
-   float                PictureBandwidth     = 0;
+   picture_params_t     picture;
+   stream_params_t      stream;
    int                  IsFpfEndFound        = 0;
    int                  ResultBandwith [2000];
    int                  ResultPace [2000];
@@ -202,18 +212,18 @@ int main (int argc, char *argv[])
                 {
                    if (IsStartOfStream)
                    {
-                      StreamPaceStart = paces;
+                      stream.PaceStart = paces;   
                       IsStartOfStream = 0;
                    }
                    if (IsStartOfPicture)
                    {
-                      PicturePaceStart = paces;
+                      picture.PaceStart = paces;
                       IsStartOfPicture = 0;
                    }
                    if ((bytes > 0) && (next_null < 2))
                    {
-                      PictureTotalBytes = PictureTotalBytes + bytes;
-                      PicturePaceEnd = paces;
+                      picture.TotalBytes  = picture.TotalBytes + bytes;
+                      picture.PaceEnd = paces;
                       next_null = 0;
                    }
                    else
@@ -221,27 +231,27 @@ int main (int argc, char *argv[])
                       next_null++;
                       if (next_null > 3) /*Configuration du nombre de 0 pour confirmer la fin de l'image*/
                       {
-                         PictureTotalPace = PicturePaceEnd - PicturePaceStart;
-                         PictureBandwidth = ((float)PictureTotalBytes*1000*1000) / ((float)PictureTotalPace*1024*1024); 
-                         GlobalTranfer = GlobalTranfer + (unsigned long long)PictureTotalBytes;
+                         picture.TotalPace = picture.PaceEnd - picture.PaceStart;
+                         picture.Bandwidth = ((float)picture.TotalBytes*1000*1000) / ((float)picture.TotalPace*1024*1024); 
+                         GlobalTranfer = GlobalTranfer + (unsigned long long)picture.TotalBytes;
 #if (DEBUG == 2)   
-                         printf ("\t end of picture. Pace End %d & Pace Stard %d\n", PicturePaceEnd, PicturePaceStart);
-                         printf ("\t total pace  = %d\n",PictureTotalPace);
-                         printf ("\t total bytes = %d\n",PictureTotalBytes);
-                         printf ("\t Bandwitdh   = %2f\n", PictureBandwidth);
+                         printf ("\t end of picture. Pace End %d & Pace Stard %d\n", picture.PaceEnd, picture.PaceStart);
+                         printf ("\t total pace  = %d\n",picture.TotalPace);
+                         printf ("\t total bytes = %d\n",picture.TotalBytes);
+                         printf ("\t Bandwitdh   = %2f\n", picture.Bandwidth);
                          printf ("\t Global transfer   = %lld\n", GlobalTranfer);
                          printf ("\t Dofid = %d\n", Dofid);
 
 #endif
-                         ResultBandwith[PictureNumber-1] = PictureBandwidth;
-                         ResultPace[PictureNumber-1]     = PictureTotalPace;
-                         ResultTranfert[PictureNumber-1] = PictureTotalBytes;
+                         ResultBandwith[PictureNumber-1] = picture.Bandwidth;
+                         ResultPace[PictureNumber-1]     = picture.TotalPace;
+                         ResultTranfert[PictureNumber-1] = picture.TotalBytes;
                          ResultDofid [PictureNumber-1]   = Dofid;
 
                          IsPictureFound      = 0;
                          next_null           = 0;
                          previous_null       = 1;
-                         PictureTotalBytes   = 0;
+                         picture.TotalBytes   = 0;
                       }
                    }
                 }
@@ -250,7 +260,7 @@ int main (int argc, char *argv[])
        }
    }
 
-   StreamTotalPace = PicturePaceEnd - StreamPaceStart;
+   stream.TotalPace = picture.PaceEnd - stream.PaceStart;
 
    fclose(fichier);
    printf ("Parsing completed, log result to csv file\n");
@@ -336,7 +346,7 @@ int main (int argc, char *argv[])
                                                                                  TabCumulatedBytes[0],TabCumulatedPaces[0],TabCumulatedBytes[1],TabCumulatedPaces[1],TabCumulatedBytes[2],TabCumulatedPaces[2],
                                                                                  TabCumulatedBytes[3],TabCumulatedPaces[3],TabCumulatedBytes[4],TabCumulatedPaces[4],TabCumulatedBytes[5],TabCumulatedPaces[5],
                                                                                  TabCumulatedBytes[6],TabCumulatedPaces[6],TabCumulatedBytes[7],TabCumulatedPaces[7],TabCumulatedBytes[8],TabCumulatedPaces[8],
-                                                                                 TabCumulatedBytes[9],TabCumulatedPaces[9],CumulatedBytes,PictureNumber,StreamTotalPace);
+                                                                                 TabCumulatedBytes[9],TabCumulatedPaces[9],CumulatedBytes,PictureNumber,stream.TotalPace);
       }
       fclose(fichier);
    }
