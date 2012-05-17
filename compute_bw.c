@@ -68,6 +68,10 @@ int main (int argc, char *argv[])
    unsigned long long   CumulatedBytes       = 0;
    unsigned long long   TabCumulatedBytes[20] = {0};
    int                  TabCumulatedPaces[20] = {0};
+   unsigned int         PacesOver5            = 0;
+   unsigned int         BytesOver5            = 0;
+   unsigned int         MeanPaces             = 0;
+   unsigned int         MeanBytes             = 0;
 
    printf ("%s\n",argv[1]);
    fichier = fopen(argv[1], "r");
@@ -198,6 +202,20 @@ int main (int argc, char *argv[])
                          result[PictureNumber-1].Pace      = picture.TotalPace;
                          result[PictureNumber-1].Tranfert  = picture.TotalBytes;
                          result[PictureNumber-1].Dofid     = Dofid;
+
+                         for (i=0 ; i < 4; i++)
+                         {
+                            avg[i].pace   = avg[i+1].pace;
+                            avg[i].bytes  = avg[i+1].bytes;
+                         }
+                         avg[4].pace   = picture.TotalPace;
+                         avg[4].bytes  = picture.TotalBytes;
+                         for (i=0 ; i < 5; i++)
+                         {
+
+                            PacesOver5      += avg[i].pace;
+                            BytesOver5      += avg[i].bytes;
+                         }
 
                          IsPictureFound      = 0;
                          next_null           = 0;
