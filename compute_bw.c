@@ -61,11 +61,7 @@ int main (int argc, char *argv[])
    unsigned long long   TabCumulatedBytes[10] = {0};
    int                  TabCumulatedPaces[10] = {0};
 
-#if 0
-   fichier = fopen("Data_Sbag_11-05-12_21-39-43.csv", "r");
-#else
    printf ("%s\n",argv[1]);
-#endif
    fichier = fopen(argv[1], "r");
 
    if (fichier != NULL)
@@ -74,7 +70,7 @@ int main (int argc, char *argv[])
       {
           line_counter++;
 #if (DEBUG == 1)
-          printf("line num %d: %s",line_counter, chaine);
+          printf("debug: line num %d: %s",line_counter, chaine);
 #endif
           pch = strtok (chaine," ,");
           line_param = 0;
@@ -82,7 +78,7 @@ int main (int argc, char *argv[])
           {
              strcpy (parsed_line[line_param] , pch);
 #if (DEBUG == 1)   
-             printf ("param num %d: %s\n",line_param, parsed_line[line_param]);
+             printf ("\tdebug: param num %d: %s\n",line_param, parsed_line[line_param]);
 #endif
              pch = strtok (NULL, " ,");
              line_param++;
@@ -108,10 +104,10 @@ int main (int argc, char *argv[])
                  sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
                  sscanf(BufferDofid, "%x\n", &Dofid);
                  Dofid = Dofid - 0x1000;
-#if (DEBUG == 3)
-                 printf ("debug: FPF value is %s\n", parsed_line[6]);
+#if (DEBUG == 1)
+                 printf ("\t\tdebug: FPF = %s\n", parsed_line[6]);
                  printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
-                 printf("Dofid = %d\n", Dofid);
+                 printf("\t\t\tdebug: Dofid = %d\n", Dofid);
 #endif
                  if (!strncmp(parsed_line[6] , "0x100\n",6))
                  {
@@ -119,7 +115,7 @@ int main (int argc, char *argv[])
                  }
                  else if ((Dofid%100) == 10)
                  {
-                    printf ("dofid = %d\n");
+                    printf ("dofid = %d, get results\n",Dofid);
                     TabCumulatedBytes[i] = CumulatedBytes;
                     TabCumulatedPaces[i] = paces;
                     i++;
@@ -136,7 +132,7 @@ int main (int argc, char *argv[])
                 bytes = atoi(parsed_line[8]);
                 paces = atoi(parsed_line[3]);
 #if (DEBUG == 2)
-                printf ("\t\tpaces & bytes = %d & %d \n",paces, bytes);
+                printf ("\t\tdebug: TM parsed:  paces & bytes = %d & %d \n",paces, bytes);
 #endif
                 if(!IsPictureFound)
                 {
@@ -149,8 +145,8 @@ int main (int argc, char *argv[])
                    IsPictureFound = 1;
                    IsStartOfPicture = 1;
                    previous_null = 0;
-#if (DEBUG == 2)   
-                   printf ("picture num %d is found\n", PictureNumber);
+#if (DEBUG == 4)   
+                   printf ("\t\t\tpicture num %d is found\n", PictureNumber);
 #endif
                 }
                 if (IsPictureFound)
@@ -179,13 +175,13 @@ int main (int argc, char *argv[])
                          picture.TotalPace = picture.PaceEnd - picture.PaceStart;
                          picture.Bandwidth = ((float)picture.TotalBytes*1000*1000) / ((float)picture.TotalPace*1024*1024); 
                          GlobalTranfer = GlobalTranfer + (unsigned long long)picture.TotalBytes;
-#if (DEBUG == 2)   
-                         printf ("\t end of picture. Pace End %d & Pace Stard %d\n", picture.PaceEnd, picture.PaceStart);
-                         printf ("\t total pace  = %d\n",picture.TotalPace);
-                         printf ("\t total bytes = %d\n",picture.TotalBytes);
-                         printf ("\t Bandwitdh   = %2f\n", picture.Bandwidth);
-                         printf ("\t Global transfer   = %lld\n", GlobalTranfer);
-                         printf ("\t Dofid = %d\n", Dofid);
+#if (DEBUG == 4)   
+                         printf ("\t\t\t\t end of picture. Pace End %d & Pace Stard %d\n", picture.PaceEnd, picture.PaceStart);
+                         printf ("\t\t\t\t total pace  = %d\n",picture.TotalPace);
+                         printf ("\t\t\t\t total bytes = %d\n",picture.TotalBytes);
+                         printf ("\t\t\t\t Bandwitdh   = %2f\n", picture.Bandwidth);
+                         printf ("\t\t\t\t Global transfer   = %lld\n", GlobalTranfer);
+                         printf ("\t\t\t\t Dofid = %d\n", Dofid);
 
 #endif
                          result[PictureNumber-1].Bandwidth = picture.Bandwidth;
@@ -221,8 +217,8 @@ int main (int argc, char *argv[])
        pch++;
    --pch;
    strcpy((char*)pch,"_details.txt");
-   printf ("LogFileName = %s\n",LogFileName); 
 /*Save parsing details in log file*/
+   printf ("LogFileName = %s",LogFileName); 
    fichier = fopen(LogFileName, "w");
    if (fichier != NULL)
    {
@@ -247,6 +243,7 @@ int main (int argc, char *argv[])
          fprintf(fichier, ",%d", result[i].Bandwidth);
       }
       fclose(fichier);
+      printf ("saved\n");
    }
 
 /*All previous results in same file*/
@@ -274,6 +271,7 @@ int main (int argc, char *argv[])
          fprintf(fichier, ",%d", result[i].Bandwidth);
       } 
       fprintf(fichier, "\n\n");
+      printf("16bits_with_cache.csv saved");
       fclose(fichier);
    }
  
@@ -293,6 +291,7 @@ int main (int argc, char *argv[])
                                                                                  TabCumulatedBytes[6],TabCumulatedPaces[6],TabCumulatedBytes[7],TabCumulatedPaces[7],TabCumulatedBytes[8],TabCumulatedPaces[8],
                                                                                  TabCumulatedBytes[9],TabCumulatedPaces[9],CumulatedBytes,PictureNumber,stream.TotalPace);
       }
+      printf("overall_restult.csv saved");
       fclose(fichier);
    }
    return 0;
