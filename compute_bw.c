@@ -28,6 +28,12 @@ typedef struct overall_results_s
    int  Bandwidth;
 }overall_results_t;
 
+typedef struct avg_over_5_s
+{
+   unsigned long long   bytes;
+   unsigned int         paces;
+}avg_over_5_t;
+
 //int main ()
 int main (int argc, char *argv[])
 {
@@ -57,6 +63,7 @@ int main (int argc, char *argv[])
    picture_params_t     picture;
    stream_params_t      stream;
    overall_results_t    result [2000];
+   avg_over_5_t         avg[4];
    unsigned long long   GlobalTranfer        = 0;
    unsigned long long   CumulatedBytes       = 0;
    unsigned long long   TabCumulatedBytes[20] = {0};
@@ -94,15 +101,6 @@ int main (int argc, char *argv[])
           }
           else
           {
-             if (!strcmp(parsed_line[1] , "TM"))
-             {
-                 bytes = atoi(parsed_line[8]);
-                 paces = atoi(parsed_line[4]);
-                 CumulatedBytes = CumulatedBytes + (unsigned long long)bytes;
-#if (Debug == 1)                 
-                 printf("CumulatedBytes = %lld\n", CumulatedBytes); 
-#endif
-             }
              if (!strcmp(parsed_line[1] , "FPF"))
              {
                  sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
@@ -138,11 +136,12 @@ int main (int argc, char *argv[])
                     IsFpfEndFound = 1;
                     TabCumulatedBytes[i] = CumulatedBytes;
                  }
-             }
+             }/*if (!strcmp(parsed_line[1] , "FPF"))*/
              else if (!strcmp(parsed_line[1] , "TM"))
              {
                 bytes = atoi(parsed_line[8]);
                 paces = atoi(parsed_line[3]);
+                CumulatedBytes = CumulatedBytes + (unsigned long long)bytes;
 #if (DEBUG == 2)
                 printf ("\t\tdebug: TM parsed:  paces & bytes = %d & %d \n",paces, bytes);
 #endif
@@ -194,7 +193,6 @@ int main (int argc, char *argv[])
                          printf ("\t\t\t\t Bandwitdh   = %2f\n", picture.Bandwidth);
                          printf ("\t\t\t\t Global transfer   = %lld\n", GlobalTranfer);
                          printf ("\t\t\t\t Dofid = %d\n", Dofid);
-
 #endif
                          result[PictureNumber-1].Bandwidth = picture.Bandwidth;
                          result[PictureNumber-1].Pace      = picture.TotalPace;
@@ -205,10 +203,10 @@ int main (int argc, char *argv[])
                          next_null           = 0;
                          previous_null       = 1;
                          picture.TotalBytes   = 0;
-                      }
-                   }
-                }
-             }
+                      }/*if (next_null > 3) */
+                   }/*if ((bytes > 0) && (next_null < 2))*/
+                }/*if (IsPictureFound)*/
+             }/*if (!strcmp(parsed_line[1] , "TM"))*/
           }
        }
    }
@@ -306,16 +304,3 @@ int main (int argc, char *argv[])
    }
    return 0;
 }
-
-#if 0
-   char str[] ="val1, val2,val3,- This, a sample string.";
-   char * pch;
-   ;printf ("Splitting string \"%s\" into tokens:\n",str);
-   printf ("Splitting string \"%s\" into tokens:\n",chaine);
-   pch = strtok (chaine,",");
-   while (pch != NULL)
-   {
-       printf ("%s\n",pch);
-      ; pch = strtok (NULL, " ,.-");
-   }
-#endif
