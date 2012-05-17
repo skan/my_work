@@ -3,7 +3,7 @@
 
 #define TAILLE_MAX 1000 
 #define CSV_COLUMN_NUMBER 20
-#define DEBUG 3
+#define DEBUG 2
 
 typedef struct picture_params_s
 {
@@ -52,14 +52,15 @@ int main (int argc, char *argv[])
    int                  IsDofidFound         = 0;
    int                  PictureNumber        = 0;
    int                  Dofid                = 0;
+   int                  TempDofid            = 9;
    char                 BufferDofid [7];
    picture_params_t     picture;
    stream_params_t      stream;
    overall_results_t    result [2000];
    unsigned long long   GlobalTranfer        = 0;
    unsigned long long   CumulatedBytes       = 0;
-   unsigned long long   TabCumulatedBytes[10] = {0};
-   int                  TabCumulatedPaces[10] = {0};
+   unsigned long long   TabCumulatedBytes[20] = {0};
+   int                  TabCumulatedPaces[20] = {0};
 
    printf ("%s\n",argv[1]);
    fichier = fopen(argv[1], "r");
@@ -98,6 +99,9 @@ int main (int argc, char *argv[])
                  bytes = atoi(parsed_line[8]);
                  paces = atoi(parsed_line[4]);
                  CumulatedBytes = CumulatedBytes + (unsigned long long)bytes;
+#if (Debug == 1)                 
+                 printf("CumulatedBytes = %lld\n", CumulatedBytes); 
+#endif
              }
              if (!strcmp(parsed_line[1] , "FPF"))
              {
@@ -115,16 +119,24 @@ int main (int argc, char *argv[])
                  }
                  else if ((Dofid%100) == 10)
                  {
+                    if (TempDofid == Dofid)
+                       i--;
+                    TempDofid = Dofid;
+                    printf("i = %d\n",i);
                     printf ("dofid = %d, get results\n",Dofid);
                     TabCumulatedBytes[i] = CumulatedBytes;
+                    printf ("TabCumulatedBytes[i] = %lld\n", TabCumulatedBytes[i]); 
                     TabCumulatedPaces[i] = paces;
                     i++;
+#if (DEBUG == 4)
+                    printf("i = %d\n,TabCumulatedBytesl[i-1] = %lld\nTabCumulatedPaces[i-1] = %d\n",i, TabCumulatedBytes[i],TabCumulatedPaces[i]);
+#endif
                  }
                  else if (!strncmp(parsed_line[6] , "0x300\n",6))
                  {
                     printf ("FPF stop message found\n");
                     IsFpfEndFound = 1;
-                    TabCumulatedBytes[4] = CumulatedBytes;
+                    TabCumulatedBytes[i] = CumulatedBytes;
                  }
              }
              else if (!strcmp(parsed_line[1] , "TM"))
@@ -175,7 +187,7 @@ int main (int argc, char *argv[])
                          picture.TotalPace = picture.PaceEnd - picture.PaceStart;
                          picture.Bandwidth = ((float)picture.TotalBytes*1000*1000) / ((float)picture.TotalPace*1024*1024); 
                          GlobalTranfer = GlobalTranfer + (unsigned long long)picture.TotalBytes;
-#if (DEBUG == 4)   
+#if (DEBUG == 2)   
                          printf ("\t\t\t\t end of picture. Pace End %d & Pace Stard %d\n", picture.PaceEnd, picture.PaceStart);
                          printf ("\t\t\t\t total pace  = %d\n",picture.TotalPace);
                          printf ("\t\t\t\t total bytes = %d\n",picture.TotalBytes);
@@ -280,16 +292,14 @@ int main (int argc, char *argv[])
    fichier = fopen("overall_result.csv", "a+");
    if (fichier != NULL)
    {
-      printf ("overall results in: overall_result.csv\n");
       if (fichier != NULL)
       {
-         //fprintf(fichier, "%d,%s,%u,%d,%d\n",IsFpfEndFound, stream_name,GlobalTranfer,PictureNumber,StreamTotalPace);
-         //fprintf(fichier, "%d,%s,%lld,%d,%d\n",IsFpfEndFound, stream_name,CumulatedBytes,PictureNumber,StreamTotalPace);
-         fprintf(fichier, "%s,%lld,%d,%lld,%d,%lld,%d,%lld,%d,%lld,%d,%lld,%d,%lld,%d,%lld,%d,%lld,%d,%lld,%d,%lld,%d,%d\n",stream_name,
-                                                                                 TabCumulatedBytes[0],TabCumulatedPaces[0],TabCumulatedBytes[1],TabCumulatedPaces[1],TabCumulatedBytes[2],TabCumulatedPaces[2],
-                                                                                 TabCumulatedBytes[3],TabCumulatedPaces[3],TabCumulatedBytes[4],TabCumulatedPaces[4],TabCumulatedBytes[5],TabCumulatedPaces[5],
-                                                                                 TabCumulatedBytes[6],TabCumulatedPaces[6],TabCumulatedBytes[7],TabCumulatedPaces[7],TabCumulatedBytes[8],TabCumulatedPaces[8],
-                                                                                 TabCumulatedBytes[9],TabCumulatedPaces[9],CumulatedBytes,PictureNumber,stream.TotalPace);
+         fprintf(fichier, "%s,",stream_name);
+         for (i = 0; i < 10; i++)
+         {
+            fprintf(fichier, "%lld,%d,",TabCumulatedBytes[i],TabCumulatedPaces[i]);
+         }
+         fprintf(fichier, "%lld,%d,%d\n",CumulatedBytes,PictureNumber,stream.TotalPace);
       }
       printf("overall_restult.csv saved");
       fclose(fichier);
