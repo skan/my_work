@@ -3,7 +3,7 @@
 
 #define TAILLE_MAX 1000 
 #define CSV_COLUMN_NUMBER 20
-#define DEBUG 2
+#define DEBUG 3
 
 typedef struct picture_params_s
 {
@@ -51,6 +51,8 @@ int main (int argc, char *argv[])
    int                  IsFpfEndFound        = 0;
    int                  IsDofidFound         = 0;
    int                  PictureNumber        = 0;
+   int                  Dofid                = 0;
+   char                 BufferDofid [7];
    picture_params_t     picture;
    stream_params_t      stream;
    overall_results_t    result [2000];
@@ -58,8 +60,6 @@ int main (int argc, char *argv[])
    unsigned long long   CumulatedBytes       = 0;
    unsigned long long   TabCumulatedBytes[10] = {0};
    int                  TabCumulatedPaces[10] = {0};
-   int                  Dofid                = 0;
-   char                 BufferDofid [7];
 
 #if 0
    fichier = fopen("Data_Sbag_11-05-12_21-39-43.csv", "r");
@@ -70,18 +70,18 @@ int main (int argc, char *argv[])
 
    if (fichier != NULL)
    {
-       while ((fgets(chaine, TAILLE_MAX, fichier) != NULL) & !IsFpfEndFound) 
-       {     
+      while ((fgets(chaine, TAILLE_MAX, fichier) != NULL) & !IsFpfEndFound) 
+      {
           line_counter++;
-#if (DEBUG == 3)   
-          printf("line num %d: %s",line_counter, chaine); 
+#if (DEBUG == 1)
+          printf("line num %d: %s",line_counter, chaine);
 #endif
           pch = strtok (chaine," ,");
           line_param = 0;
           while (pch != NULL) /*Parse les champs depuis la ligne*/
           {
              strcpy (parsed_line[line_param] , pch);
-#if (DEBUG == 3)   
+#if (DEBUG == 1)   
              printf ("param num %d: %s\n",line_param, parsed_line[line_param]);
 #endif
              pch = strtok (NULL, " ,");
@@ -97,91 +97,32 @@ int main (int argc, char *argv[])
           }
           else
           {
-#if 1 /*Compute Cumulated bytes*/          
              if (!strcmp(parsed_line[1] , "TM"))
              {
                  bytes = atoi(parsed_line[8]);
                  paces = atoi(parsed_line[4]);
                  CumulatedBytes = CumulatedBytes + (unsigned long long)bytes;
              }
-#endif          
              if (!strcmp(parsed_line[1] , "FPF"))
              {
-#if (DEBUG == 5)
-                 printf ("debug: FPF value is %s\n", parsed_line[6]);
-#endif
-#if 1 /*Parse Dofid's picture*/
                  sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
                  sscanf(BufferDofid, "%x\n", &Dofid);
                  Dofid = Dofid - 0x1000;
-#if (DEBUG == 2)
-                 printf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
+#if (DEBUG == 3)
+                 printf ("debug: FPF value is %s\n", parsed_line[6]);
+                 printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
                  printf("Dofid = %d\n", Dofid);
-#endif
 #endif
                  if (!strncmp(parsed_line[6] , "0x100\n",6))
                  {
                      printf ("FPF start message found\n");
                  }
-                 else if (Dofid == 110)
+                 else if ((Dofid%100) == 10)
                  {
-                    printf ("FPF 110\n");
-                    TabCumulatedBytes[0] = CumulatedBytes;
-                    TabCumulatedPaces[0] = paces;
-                 }
-                 else if (Dofid == 210)
-                 {
-                    printf ("FPF 200\n");
-                    TabCumulatedBytes[1] = CumulatedBytes;
-                    TabCumulatedPaces[1] = paces;
-                 }
-                 else if (Dofid == 310)
-                 {
-                    printf ("FPF 300\n");
-                    TabCumulatedBytes[2] = CumulatedBytes;
-                    TabCumulatedPaces[2] = paces;
-                 }
-                 else if (Dofid == 410)
-                 {
-                    printf ("FPF 400\n");
-                    TabCumulatedBytes[3] = CumulatedBytes;
-                    TabCumulatedPaces[3] = paces;
-                 }
-                 else if ((Dofid == 510) || (!strncmp(parsed_line[6] , "0x500\n",6)))
-                 {
-                    printf ("FPF 500\n");
-                    TabCumulatedBytes[4] = CumulatedBytes;
-                    TabCumulatedPaces[4] = paces;
-                 }
-                 else if (Dofid == 610)
-                 {
-                    printf ("FPF 600\n");
-                    TabCumulatedBytes[5] = CumulatedBytes;
-                    TabCumulatedPaces[5] = paces;
-                 }
-                 else if ((Dofid == 710) || (!strncmp(parsed_line[6] , "0x700\n",6)))
-                 {
-                    printf ("FPF 700\n");
-                    TabCumulatedBytes[6] = CumulatedBytes;
-                    TabCumulatedPaces[6] = paces;
-                 }
-                 else if (Dofid == 810)
-                 {
-                    printf ("FPF 700\n");
-                    TabCumulatedBytes[7] = CumulatedBytes;
-                    TabCumulatedPaces[7] = paces;
-                 }
-                 else if ((Dofid == 910) || (!strncmp(parsed_line[6] , "0x900\n",6)))
-                 {
-                    printf ("FPF 900\n");
-                    TabCumulatedBytes[8] = CumulatedBytes;
-                    TabCumulatedPaces[8] = paces;
-                 }
-                 else if (Dofid == 1010)
-                 {
-                    printf ("FPF 1000\n");
-                    TabCumulatedBytes[9] = CumulatedBytes;
-                    TabCumulatedPaces[9] = paces;
+                    printf ("dofid = %d\n");
+                    TabCumulatedBytes[i] = CumulatedBytes;
+                    TabCumulatedPaces[i] = paces;
+                    i++;
                  }
                  else if (!strncmp(parsed_line[6] , "0x300\n",6))
                  {
