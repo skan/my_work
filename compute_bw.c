@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#define DEBUG_COMPUTE_DOFID 0
-#define DEBUG_MEAN_5_PICT 1
 #define DEBUG_START_END_PICTURE 1
-#define DEBUG_DISPLAY_ALL_PARSED_TM 0
+#define DEBUG_DISPLAY_ALL_PARSED_TM 1
+#define DEBUG_COMPUTE_DOFID 0
+#define DEBUG_100_PICT_RESULTS 0
+#define DEBUG_MEAN_5_PICT 0
 
 #define TAILLE_MAX 1000 
 #define CSV_COLUMN_NUMBER 20
@@ -133,11 +134,13 @@ int main (int argc, char *argv[])
                     if (TempDofid == Dofid)
                        i--;
                     TempDofid = Dofid;
+                    TabCumulatedBytes[i] = CumulatedBytes;
+                    TabCumulatedPaces[i] = paces;
+#if (DEBUG_100_PICT_RESULTS == 1)
                     printf("i = %d\n",i);
                     printf ("dofid = %d, get results\n",Dofid);
-                    TabCumulatedBytes[i] = CumulatedBytes;
                     printf ("TabCumulatedBytes[i] = %lld\n", TabCumulatedBytes[i]); 
-                    TabCumulatedPaces[i] = paces;
+#endif
                     i++;
 #if (DEBUG == 4)
                     printf("i = %d\n,TabCumulatedBytesl[i-1] = %lld\nTabCumulatedPaces[i-1] = %d\n",i, TabCumulatedBytes[i],TabCumulatedPaces[i]);
@@ -293,12 +296,12 @@ int main (int argc, char *argv[])
       fprintf(fichier, "\n%s,mean bytes over 5,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%.2f", result[i].MeanBytesOver5);
+         fprintf(fichier, ",%.0f", result[i].MeanBytesOver5);
       }
       fprintf(fichier, "\n%s,mean time over 5,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%.2f", result[i].MeanPacesOver5);
+         fprintf(fichier, ",%.0f", result[i].MeanPacesOver5);
       }
       fclose(fichier);
       printf ("saved\n");
