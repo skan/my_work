@@ -16,16 +16,18 @@ typedef struct picture_params_s
 
 typedef struct stream_params_s
 {
-   int  PaceStart;
-   int  TotalPace;
+   int    PaceStart;
+   int    TotalPace;
 }stream_params_t;
 
 typedef struct overall_results_s
 {
-   int  Dofid;
-   int  Pace;
-   int  Tranfert;
-   int  Bandwidth;
+   int    Dofid;
+   int    Pace;
+   int    Tranfert;
+   float  Bandwidth;
+   float  MeanPacesOver5;
+   float  MeanBytesOver5;
 }overall_results_t;
 
 typedef struct avg_over_5_s
@@ -70,8 +72,6 @@ int main (int argc, char *argv[])
    int                  TabCumulatedPaces[20] = {0};
    unsigned int         PacesOver5            = 0;
    unsigned int         BytesOver5            = 0;
-   unsigned int         MeanPaces             = 0;
-   unsigned int         MeanBytes             = 0;
 
    printf ("%s\n",argv[1]);
    fichier = fopen(argv[1], "r");
@@ -185,7 +185,7 @@ int main (int argc, char *argv[])
                    else
                    {
                       next_null++;
-                      if (next_null > 3) /*Configuration du nombre de 0 pour confirmer la fin de l'image*/
+                      if (next_null > 3) /*configuration of number of null bytes values to confirm end of picture*/
                       {
                          picture.TotalPace = picture.PaceEnd - picture.PaceStart;
                          picture.Bandwidth = ((float)picture.TotalBytes*1000*1000) / ((float)picture.TotalPace*1024*1024); 
@@ -205,17 +205,20 @@ int main (int argc, char *argv[])
 
                          for (i=0 ; i < 4; i++)
                          {
-                            avg[i].pace   = avg[i+1].pace;
+                            avg[i].paces   = avg[i+1].paces;
                             avg[i].bytes  = avg[i+1].bytes;
                          }
-                         avg[4].pace   = picture.TotalPace;
+                         avg[4].paces   = picture.TotalPace;
                          avg[4].bytes  = picture.TotalBytes;
                          for (i=0 ; i < 5; i++)
                          {
 
-                            PacesOver5      += avg[i].pace;
+                            PacesOver5      += avg[i].paces;
                             BytesOver5      += avg[i].bytes;
                          }
+                         result[PictureNumber-1].MeanBytesOver5  = (float)BytesOver5 / 5;
+                         result[PictureNumber-1].MeanPacesOver5  = (float)PacesOver5 / 5;
+
 
                          IsPictureFound      = 0;
                          next_null           = 0;
@@ -245,12 +248,13 @@ int main (int argc, char *argv[])
        pch++;
    --pch;
    strcpy((char*)pch,"_details.txt");
+
 /*Save parsing details in log file*/
    printf ("LogFileName = %s",LogFileName); 
    fichier = fopen(LogFileName, "w");
    if (fichier != NULL)
    {
-      fprintf(fichier, "%s", stream_name);
+      fprintf(fichier, "%s,dofid,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%d", result[i].Dofid);
@@ -260,21 +264,31 @@ int main (int argc, char *argv[])
       {
          fprintf(fichier, ",%d", result[i].Tranfert);
       }
-      fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
+      fprintf(fichier, "\n%s,pace,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%d", result[i].Pace);
       }
-      fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
+      fprintf(fichier, "\n%s,bw,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", result[i].Bandwidth);
+         fprintf(fichier, ",%f", result[i].Bandwidth);
+      }
+      fprintf(fichier, "\n%s,bytes over 5,", stream_name);
+      for (i=0;i<PictureNumber;i++)
+      {
+         fprintf(fichier, ",%f", result[i].MeanBytesOver5);
+      }
+      fprintf(fichier, "\n%s,paces over 5,", stream_name);
+      for (i=0;i<PictureNumber;i++)
+      {
+         fprintf(fichier, ",%f", result[i].MeanPacesOver5);
       }
       fclose(fichier);
       printf ("saved\n");
    }
 
-/*All previous results in same file*/
+#if 0/*append results details in .csv file*/
    fichier = fopen("16bits_with_cache.csv", "a+");
    if (fichier != NULL)
    {
@@ -302,9 +316,9 @@ int main (int argc, char *argv[])
       printf("16bits_with_cache.csv saved");
       fclose(fichier);
    }
- 
+#endif
 
-/*add stream resuls to overall result file*/
+/*append bandwidth results per pictures' group in overall results.csv*/
    fichier = fopen("overall_result.csv", "a+");
    if (fichier != NULL)
    {
