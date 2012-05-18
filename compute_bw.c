@@ -1,9 +1,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#define DEBUG_COMPUTE_DOFID 0
+#define DEBUG_MEAN_5_PICT 1
+#define DEBUG_START_END_PICTURE 1
+#define DEBUG_DISPLAY_ALL_PARSED_TM 0
+
 #define TAILLE_MAX 1000 
 #define CSV_COLUMN_NUMBER 20
-#define DEBUG 2
+#define DEBUG 5
 
 typedef struct picture_params_s
 {
@@ -16,17 +21,25 @@ typedef struct picture_params_s
 
 typedef struct stream_params_s
 {
-   int  PaceStart;
-   int  TotalPace;
+   int    PaceStart;
+   int    TotalPace;
 }stream_params_t;
 
 typedef struct overall_results_s
 {
-   int  Dofid;
-   int  Pace;
-   int  Tranfert;
-   int  Bandwidth;
+   int    Dofid;
+   int    Pace;
+   int    Tranfert;
+   float  Bandwidth;
+   float  MeanPacesOver5;
+   float  MeanBytesOver5;
 }overall_results_t;
+
+typedef struct avg_over_5_s
+{
+   int     bytes;
+   int     paces;
+}avg_over_5_t;
 
 //int main ()
 int main (int argc, char *argv[])
@@ -49,7 +62,6 @@ int main (int argc, char *argv[])
    int                  IsStartOfPicture     = 0;
    int                  IsStartOfStream      = 0;
    int                  IsFpfEndFound        = 0;
-   int                  IsDofidFound         = 0;
    int                  PictureNumber        = 0;
    int                  Dofid                = 0;
    int                  TempDofid            = 9;
@@ -57,10 +69,18 @@ int main (int argc, char *argv[])
    picture_params_t     picture;
    stream_params_t      stream;
    overall_results_t    result [2000];
+   avg_over_5_t         avg[5];
    unsigned long long   GlobalTranfer        = 0;
    unsigned long long   CumulatedBytes       = 0;
    unsigned long long   TabCumulatedBytes[20] = {0};
    int                  TabCumulatedPaces[20] = {0};
+   unsigned int         PacesOver5            = 0;
+   unsigned int         BytesOver5            = 0;
+
+   memset (&picture,0,sizeof(picture_params_t));
+   memset (&stream,0,sizeof(stream_params_t));
+   memset (&result,0,2000*sizeof(overall_results_t));
+   memset (&avg,0,5*sizeof(avg_over_5_t));
 
    printf ("%s\n",argv[1]);
    fichier = fopen(argv[1], "r");
@@ -94,21 +114,12 @@ int main (int argc, char *argv[])
           }
           else
           {
-             if (!strcmp(parsed_line[1] , "TM"))
-             {
-                 bytes = atoi(parsed_line[8]);
-                 paces = atoi(parsed_line[4]);
-                 CumulatedBytes = CumulatedBytes + (unsigned long long)bytes;
-#if (Debug == 1)                 
-                 printf("CumulatedBytes = %lld\n", CumulatedBytes); 
-#endif
-             }
              if (!strcmp(parsed_line[1] , "FPF"))
              {
                  sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
                  sscanf(BufferDofid, "%x\n", &Dofid);
                  Dofid = Dofid - 0x1000;
-#if (DEBUG == 1)
+#if ((DEBUG == 1) || (DEBUG_COMPUTE_DOFID == 1))
                  printf ("\t\tdebug: FPF = %s\n", parsed_line[6]);
                  printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
                  printf("\t\t\tdebug: Dofid = %d\n", Dofid);
@@ -138,12 +149,13 @@ int main (int argc, char *argv[])
                     IsFpfEndFound = 1;
                     TabCumulatedBytes[i] = CumulatedBytes;
                  }
-             }
+             }/*if (!strcmp(parsed_line[1] , "FPF"))*/
              else if (!strcmp(parsed_line[1] , "TM"))
              {
                 bytes = atoi(parsed_line[8]);
                 paces = atoi(parsed_line[3]);
-#if (DEBUG == 2)
+                CumulatedBytes = CumulatedBytes + (unsigned long long)bytes;
+#if ((DEBUG == 2) || (DEBUG_DISPLAY_ALL_PARSED_TM == 1))
                 printf ("\t\tdebug: TM parsed:  paces & bytes = %d & %d \n",paces, bytes);
 #endif
                 if(!IsPictureFound)
@@ -157,7 +169,7 @@ int main (int argc, char *argv[])
                    IsPictureFound = 1;
                    IsStartOfPicture = 1;
                    previous_null = 0;
-#if (DEBUG == 4)   
+#if ((DEBUG == 4) || (DEBUG_START_END_PICTURE == 1))   
                    printf ("\t\t\tpicture num %d is found\n", PictureNumber);
 #endif
                 }
@@ -182,33 +194,56 @@ int main (int argc, char *argv[])
                    else
                    {
                       next_null++;
-                      if (next_null > 3) /*Configuration du nombre de 0 pour confirmer la fin de l'image*/
+                      if (next_null > 3) /*configuration of number of null bytes values to confirm end of picture*/
                       {
                          picture.TotalPace = picture.PaceEnd - picture.PaceStart;
                          picture.Bandwidth = ((float)picture.TotalBytes*1000*1000) / ((float)picture.TotalPace*1024*1024); 
                          GlobalTranfer = GlobalTranfer + (unsigned long long)picture.TotalBytes;
-#if (DEBUG == 2)   
+#if ((DEBUG == 2) || (DEBUG_START_END_PICTURE == 1))  
                          printf ("\t\t\t\t end of picture. Pace End %d & Pace Stard %d\n", picture.PaceEnd, picture.PaceStart);
                          printf ("\t\t\t\t total pace  = %d\n",picture.TotalPace);
                          printf ("\t\t\t\t total bytes = %d\n",picture.TotalBytes);
                          printf ("\t\t\t\t Bandwitdh   = %2f\n", picture.Bandwidth);
                          printf ("\t\t\t\t Global transfer   = %lld\n", GlobalTranfer);
                          printf ("\t\t\t\t Dofid = %d\n", Dofid);
-
 #endif
                          result[PictureNumber-1].Bandwidth = picture.Bandwidth;
                          result[PictureNumber-1].Pace      = picture.TotalPace;
                          result[PictureNumber-1].Tranfert  = picture.TotalBytes;
                          result[PictureNumber-1].Dofid     = Dofid;
 
+                         for (i=0 ; i < 4; i++)
+                         {
+                            avg[i].paces   = avg[i+1].paces;
+                            avg[i].bytes   = avg[i+1].bytes;
+#if (DEBUG_MEAN_5_PICT == 1)
+                            printf("i = %d\t avg_pace = %d\t avg_byte = %d\n", i, avg[i].paces, avg[i].bytes);
+#endif
+                         }
+                         avg[4].paces   = picture.TotalPace;
+                         avg[4].bytes   = picture.TotalBytes;
+                         PacesOver5 = 0 ;
+                         BytesOver5 = 0 ;
+                         for (i=0 ; i < 5; i++)
+                         {
+                            PacesOver5      += avg[i].paces;
+                            BytesOver5      += avg[i].bytes;
+#if (DEBUG_MEAN_5_PICT == 1)
+                            printf("5 paces = %d\t 5 bytes = %d\n", PacesOver5, BytesOver5);
+#endif
+                         }
+                         result[PictureNumber-1].MeanBytesOver5  = (float)(BytesOver5 / 5);
+                         result[PictureNumber-1].MeanPacesOver5  = (float)(PacesOver5 / 5);
+
+
                          IsPictureFound      = 0;
                          next_null           = 0;
                          previous_null       = 1;
                          picture.TotalBytes   = 0;
-                      }
-                   }
-                }
-             }
+                      }/*if (next_null > 3) */
+                   }/*if ((bytes > 0) && (next_null < 2))*/
+                }/*if (IsPictureFound)*/
+             }/*if (!strcmp(parsed_line[1] , "TM"))*/
           }
        }
    }
@@ -229,36 +264,47 @@ int main (int argc, char *argv[])
        pch++;
    --pch;
    strcpy((char*)pch,"_details.txt");
+
 /*Save parsing details in log file*/
    printf ("LogFileName = %s",LogFileName); 
    fichier = fopen(LogFileName, "w");
    if (fichier != NULL)
    {
-      fprintf(fichier, "%s", stream_name);
+      fprintf(fichier, "%s,dofid,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%d", result[i].Dofid);
       }
-      fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
+      fprintf(fichier, "\n%s,bytes,%lld", stream_name,GlobalTranfer);
       for (i=0;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%d", result[i].Tranfert);
       }
-      fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
+      fprintf(fichier, "\n%s,pace,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%d", result[i].Pace);
       }
-      fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
+      fprintf(fichier, "\n%s,bw,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", result[i].Bandwidth);
+         fprintf(fichier, ",%f", result[i].Bandwidth);
+      }
+      fprintf(fichier, "\n%s,mean bytes over 5,", stream_name);
+      for (i=0;i<PictureNumber;i++)
+      {
+         fprintf(fichier, ",%.2f", result[i].MeanBytesOver5);
+      }
+      fprintf(fichier, "\n%s,mean time over 5,", stream_name);
+      for (i=0;i<PictureNumber;i++)
+      {
+         fprintf(fichier, ",%.2f", result[i].MeanPacesOver5);
       }
       fclose(fichier);
       printf ("saved\n");
    }
 
-/*All previous results in same file*/
+#if 0/*append results details in .csv file*/
    fichier = fopen("16bits_with_cache.csv", "a+");
    if (fichier != NULL)
    {
@@ -286,9 +332,9 @@ int main (int argc, char *argv[])
       printf("16bits_with_cache.csv saved");
       fclose(fichier);
    }
- 
+#endif
 
-/*add stream resuls to overall result file*/
+/*append bandwidth results per pictures' group in overall results.csv*/
    fichier = fopen("overall_result.csv", "a+");
    if (fichier != NULL)
    {
@@ -306,16 +352,3 @@ int main (int argc, char *argv[])
    }
    return 0;
 }
-
-#if 0
-   char str[] ="val1, val2,val3,- This, a sample string.";
-   char * pch;
-   ;printf ("Splitting string \"%s\" into tokens:\n",str);
-   printf ("Splitting string \"%s\" into tokens:\n",chaine);
-   pch = strtok (chaine,",");
-   while (pch != NULL)
-   {
-       printf ("%s\n",pch);
-      ; pch = strtok (NULL, " ,.-");
-   }
-#endif
