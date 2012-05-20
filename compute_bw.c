@@ -3,7 +3,7 @@
 
 #define DEBUG_START_END_PICTURE 1
 #define DEBUG_DISPLAY_ALL_PARSED_TM 1
-#define DEBUG_COMPUTE_DOFID 0
+#define DEBUG_COMPUTE_DOFID 1
 #define DEBUG_100_PICT_RESULTS 0
 #define DEBUG_MEAN_5_PICT 0
 
@@ -117,12 +117,12 @@ int main (int argc, char *argv[])
           {
              if (!strcmp(parsed_line[1] , "FPF"))
              {
-                 sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
+                 sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][3],parsed_line[6][4],parsed_line[6][5],parsed_line[6][6]);
                  sscanf(BufferDofid, "%x\n", &Dofid);
                  Dofid = Dofid - 0x1000;
 #if ((DEBUG == 1) || (DEBUG_COMPUTE_DOFID == 1))
                  printf ("\t\tdebug: FPF = %s\n", parsed_line[6]);
-                 printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
+                 printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][3],parsed_line[6][4],parsed_line[6][5],parsed_line[6][6]);
                  printf("\t\t\tdebug: Dofid = %d\n", Dofid);
 #endif
                  if (!strncmp(parsed_line[6] , "0x100\n",6))
