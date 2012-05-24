@@ -346,8 +346,26 @@ int main (int argc, char *argv[])
       fclose(fichier);
    }
 #endif
+#if 1
+   fichier = fopen("overall_mean_over_5_results.csv", "a+");
+   if (fichier != NULL)
+   {
+      fprintf(fichier, "%s,",stream_name);
+      fprintf(fichier, "\n%s,mean bytes over 5,", stream_name);
+      for (i=0;i<PictureNumber;i++)
+      {
+         fprintf(fichier, ",%.0f", result[i].MeanBytesOver5);
+      }
+      fprintf(fichier, "\n%s,mean time over 5,", stream_name);
+      for (i=0;i<PictureNumber;i++)
+      {
+         fprintf(fichier, ",%.0f", result[i].MeanPacesOver5);
+      }
+      printf("overall_mean_over_5_results.csv saved");
+      fclose(fichier);
+#endif
+#if 0 /*append bandwidth results per pictures' group in overall results.csv*/
 
-/*append bandwidth results per pictures' group in overall results.csv*/
    fichier = fopen("overall_result.csv", "a+");
    if (fichier != NULL)
    {
@@ -363,5 +381,6 @@ int main (int argc, char *argv[])
       printf("overall_restult.csv saved");
       fclose(fichier);
    }
+#endif
    return 0;
 }
