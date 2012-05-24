@@ -51,6 +51,7 @@ int main (int argc, char *argv[])
    char                 *pch;
    char                 parsed_line [CSV_COLUMN_NUMBER][200];
    int                  i                    = 0;
+   int                  j                    = 0;
    int                  line_param           = 0;
    int                  line_counter         = 0;
    int                  bytes                = 0;
@@ -65,6 +66,7 @@ int main (int argc, char *argv[])
    int                  IsFpfEndFound        = 0;
    int                  PictureNumber        = 0;
    int                  Dofid                = 0;
+   int                  TabDofid [2000]      ={0};
    int                  TempDofid            = 9;
    char                 BufferDofid [7];
    picture_params_t     picture;
@@ -117,11 +119,15 @@ int main (int argc, char *argv[])
           {
              if (!strcmp(parsed_line[1] , "FPF"))
              {
+                 //sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
                  sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][3],parsed_line[6][4],parsed_line[6][5],parsed_line[6][6]);
                  sscanf(BufferDofid, "%x\n", &Dofid);
                  Dofid = Dofid - 0x1000;
+                 TabDofid[j] = Dofid;
+                 j++;
 #if ((DEBUG == 1) || (DEBUG_COMPUTE_DOFID == 1))
                  printf ("\t\tdebug: FPF = %s\n", parsed_line[6]);
+                 //printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
                  printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][3],parsed_line[6][4],parsed_line[6][5],parsed_line[6][6]);
                  printf("\t\t\tdebug: Dofid = %d\n", Dofid);
 #endif
@@ -238,7 +244,6 @@ int main (int argc, char *argv[])
                          result[PictureNumber-1].MeanBytesOver5  = (float)(BytesOver5 / 5);
                          result[PictureNumber-1].MeanPacesOver5  = (float)(PacesOver5 / 5);
 
-
                          IsPictureFound      = 0;
                          next_null           = 0;
                          previous_null       = 1;
@@ -273,7 +278,12 @@ int main (int argc, char *argv[])
    fichier = fopen(LogFileName, "w");
    if (fichier != NULL)
    {
-      fprintf(fichier, "%s,dofid,", stream_name);
+      fprintf(fichier, "%s,default dofid,", stream_name);
+      for (i=0; i<j; i++)
+      {
+         fprintf(fichier, ",%d", result[i].Dofid);
+      }
+      fprintf(fichier, "\n%s,parsed dofid,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%d", result[i].Dofid);
