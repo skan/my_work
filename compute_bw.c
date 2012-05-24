@@ -274,7 +274,7 @@ int main (int argc, char *argv[])
    strcpy((char*)pch,"_details.txt");
 
 /*Save parsing details for each stream log file*/
-   printf ("LogFileName = %s",LogFileName); 
+   printf ("LogFileName = %s\n",LogFileName); 
    fichier = fopen(LogFileName, "w");
    if (fichier != NULL)
    {
@@ -319,20 +319,31 @@ int main (int argc, char *argv[])
 
 
 #if 1 /*save mean over 5 results for all streams*/
+   /*look for DOFID 10*/
+   j = 2;
+   while (j < PictureNumber)
+   {
+      if ((result[j].Dofid == 10) || (result[j].Dofid == -4096)) 
+      {
+         break;
+      }
+      j++;
+   }
+
    fichier = fopen("overall_mean_over_5_results.csv", "a+");
    if (fichier != NULL)
    {
       fprintf(fichier, "\n%s,mean time over 5,", stream_name);
-      for (i=0;i<PictureNumber;i++)
+      for (i=j;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%.0f", result[i].MeanPacesOver5);
       }
       fprintf(fichier, "\n%s,mean bytes over 5,", stream_name);
-      for (i=0;i<PictureNumber;i++)
+      for (i=j;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%.0f", result[i].MeanBytesOver5);
       }
-      printf("overall_mean_over_5_results.csv saved");
+      printf("overall_mean_over_5_results.csv saved\n");
       fclose(fichier);
    }
 #endif
@@ -376,7 +387,7 @@ int main (int argc, char *argv[])
       {
          fprintf(fichier, ",%.0f", result[i].MeanPacesOver5);
       }
-      printf("overall_sreams_details.csv saved");
+      printf("overall_sreams_details.csv saved\n");
       fclose(fichier);
    }
 #endif
