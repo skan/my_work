@@ -273,7 +273,7 @@ int main (int argc, char *argv[])
    --pch;
    strcpy((char*)pch,"_details.txt");
 
-/*Save parsing details in log file*/
+/*Save parsing details for each stream log file*/
    printf ("LogFileName = %s",LogFileName); 
    fichier = fopen(LogFileName, "w");
    if (fichier != NULL)
@@ -314,43 +314,58 @@ int main (int argc, char *argv[])
          fprintf(fichier, ",%.0f", result[i].MeanPacesOver5);
       }
       fclose(fichier);
-      printf ("saved\n");
+      printf ("%s saved\n",LogFileName);
    }
 
-#if 0/*append results details in .csv file*/
-   fichier = fopen("16bits_with_cache.csv", "a+");
+
+#if 1 /*save mean over 5 results for all streams*/
+   fichier = fopen("overall_mean_over_5_results.csv", "a+");
    if (fichier != NULL)
    {
-      fprintf(fichier, "%s", stream_name);
+      fprintf(fichier, "\n%s,mean time over 5,", stream_name);
+      for (i=0;i<PictureNumber;i++)
+      {
+         fprintf(fichier, ",%.0f", result[i].MeanPacesOver5);
+      }
+      fprintf(fichier, "\n%s,mean bytes over 5,", stream_name);
+      for (i=0;i<PictureNumber;i++)
+      {
+         fprintf(fichier, ",%.0f", result[i].MeanBytesOver5);
+      }
+      printf("overall_mean_over_5_results.csv saved");
+      fclose(fichier);
+   }
+#endif
+
+#if 1 /*append stream results details in same csv file*/
+   fichier = fopen("overall_streams_details.csv", "a+");
+   if (fichier != NULL)
+   {
+      fprintf(fichier, "%s,default dofid,", stream_name);
+      for (i=0; i<j; i++)
+      {
+         fprintf(fichier, ",%d", result[i].Dofid);
+      }
+      fprintf(fichier, "\n%s,parsed dofid,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%d", result[i].Dofid);
       }
-      fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
+      fprintf(fichier, "\n%s,bytes,%lld", stream_name,GlobalTranfer);
       for (i=0;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%d", result[i].Tranfert);
       }
-      fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
+      fprintf(fichier, "\n%s,pace,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
          fprintf(fichier, ",%d", result[i].Pace);
       }
-      fprintf(fichier, "\n%s,%lld", stream_name,GlobalTranfer);
+      fprintf(fichier, "\n%s,bw,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
-         fprintf(fichier, ",%d", result[i].Bandwidth);
-      } 
-      fprintf(fichier, "\n\n");
-      printf("16bits_with_cache.csv saved");
-      fclose(fichier);
-   }
-#endif
-#if 1
-   fichier = fopen("overall_mean_over_5_results.csv", "a+");
-   if (fichier != NULL)
-   {
-      fprintf(fichier, "%s,",stream_name);
+         fprintf(fichier, ",%f", result[i].Bandwidth);
+      }
       fprintf(fichier, "\n%s,mean bytes over 5,", stream_name);
       for (i=0;i<PictureNumber;i++)
       {
@@ -361,11 +376,12 @@ int main (int argc, char *argv[])
       {
          fprintf(fichier, ",%.0f", result[i].MeanPacesOver5);
       }
-      printf("overall_mean_over_5_results.csv saved");
+      printf("overall_sreams_details.csv saved");
       fclose(fichier);
+   }
 #endif
-#if 0 /*append bandwidth results per pictures' group in overall results.csv*/
 
+#if 0 /*append bandwidth results per pictures' group in overall results.csv*/
    fichier = fopen("overall_result.csv", "a+");
    if (fichier != NULL)
    {
