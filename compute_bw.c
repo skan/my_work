@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define DEBUG_START_END_PICTURE 1
 #define DEBUG_DISPLAY_ALL_PARSED_TM 1
@@ -42,17 +43,22 @@ typedef struct avg_over_5_s
    int     paces;
 }avg_over_5_t;
 
-//int main ()
+/******************* Global ***********************/
+char                 parsed_line [CSV_COLUMN_NUMBER][200];
+
+/**************** Prototypes **********************/
+int parse_current_line (char* line);
+int compute_dofid (void);
+
+/**************** Main fct ************************/
 int main (int argc, char *argv[])
 {
 
    FILE                 *fichier = NULL;
    char                 chaine[TAILLE_MAX]   = ""; 
    char                 *pch;
-   char                 parsed_line [CSV_COLUMN_NUMBER][200];
    int                  i                    = 0;
    int                  j                    = 0;
-   int                  line_param           = 0;
    int                  line_counter         = 0;
    int                  bytes                = 0;
    int                  paces                = 0;
@@ -64,11 +70,11 @@ int main (int argc, char *argv[])
    int                  IsStartOfPicture     = 0;
    int                  IsStartOfStream      = 0;
    int                  IsFpfEndFound        = 0;
+   int                  IsDofidFound         = 0;
    int                  PictureNumber        = 0;
    int                  Dofid                = 0;
    int                  TabDofid [2000]      ={0};
    int                  TempDofid            = 9;
-   char                 BufferDofid [7];
    picture_params_t     picture;
    stream_params_t      stream;
    overall_results_t    result [2000];
@@ -92,21 +98,11 @@ int main (int argc, char *argv[])
    {
       while ((fgets(chaine, TAILLE_MAX, fichier) != NULL) & !IsFpfEndFound) 
       {
-          line_counter++;
 #if (DEBUG == 1)
           printf("debug: line num %d: %s",line_counter, chaine);
 #endif
-          pch = strtok (chaine," ,");
-          line_param = 0;
-          while (pch != NULL) /*Parse les champs depuis la ligne*/
-          {
-             strcpy (parsed_line[line_param] , pch);
-#if (DEBUG == 1)   
-             printf ("\tdebug: param num %d: %s\n",line_param, parsed_line[line_param]);
-#endif
-             pch = strtok (NULL, " ,");
-             line_param++;
-          }
+          line_counter++;
+          parse_current_line (chaine);
           if (line_counter < 5) /*skip the 4 first lines (test description)*/
           {
              if (line_counter == 2)/*Recup stream name for results log files*/
@@ -119,23 +115,24 @@ int main (int argc, char *argv[])
           {
              if (!strcmp(parsed_line[1] , "FPF"))
              {
-                 //sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
-                 sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][3],parsed_line[6][4],parsed_line[6][5],parsed_line[6][6]);
-                 sscanf(BufferDofid, "%x\n", &Dofid);
-                 Dofid = Dofid - 0x1000;
-                 TabDofid[j] = Dofid;
-                 j++;
-#if ((DEBUG == 1) || (DEBUG_COMPUTE_DOFID == 1))
-                 printf ("\t\tdebug: FPF = %s\n", parsed_line[6]);
-                 //printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
-                 printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][3],parsed_line[6][4],parsed_line[6][5],parsed_line[6][6]);
-                 printf("\t\t\tdebug: Dofid = %d\n", Dofid);
-#endif
                  if (!strncmp(parsed_line[6] , "0x100\n",6))
                  {
                      printf ("FPF start message found\n");
                  }
-                 else if ((Dofid%100) == 10)
+                 else if (!strncmp(parsed_line[6] , "0x300\n",6))
+                 {
+                    printf ("FPF stop message found\n");
+                    IsFpfEndFound = 1;
+                    TabCumulatedBytes[i] = CumulatedBytes;
+                 }
+                 else
+                 {
+                    IsDofidFound = 1;
+                    Dofid = compute_dofid();
+                    TabDofid[j] = Dofid;
+                    j++;
+                 }
+                 if ((Dofid%100) == 10)
                  {
                     if (TempDofid == Dofid)
                        i--;
@@ -152,13 +149,8 @@ int main (int argc, char *argv[])
                     printf("i = %d\n,TabCumulatedBytesl[i-1] = %lld\nTabCumulatedPaces[i-1] = %d\n",i, TabCumulatedBytes[i],TabCumulatedPaces[i]);
 #endif
                  }
-                 else if (!strncmp(parsed_line[6] , "0x300\n",6))
-                 {
-                    printf ("FPF stop message found\n");
-                    IsFpfEndFound = 1;
-                    TabCumulatedBytes[i] = CumulatedBytes;
-                 }
              }/*if (!strcmp(parsed_line[1] , "FPF"))*/
+
              else if (!strcmp(parsed_line[1] , "TM"))
              {
                 bytes = atoi(parsed_line[8]);
@@ -172,16 +164,19 @@ int main (int argc, char *argv[])
                    if (bytes == 0)
                       previous_null++;
                 }
-                if ((bytes > 0) && (previous_null > 0))
+                //if (((bytes > 0) && (previous_null > 0)) || (IsDofidFound || !(IsPictureFound)))
+                if (IsDofidFound && !(IsPictureFound))
                 {
+                   IsDofidFound = 0;
                    PictureNumber++;
                    IsPictureFound = 1;
                    IsStartOfPicture = 1;
                    previous_null = 0;
 #if ((DEBUG == 4) || (DEBUG_START_END_PICTURE == 1))   
-                   printf ("\t\t\tpicture num %d is found\n", PictureNumber);
+                   printf ("\t\t\t\tpicture num %d is found\n", PictureNumber);
 #endif
                 }
+
                 if (IsPictureFound)
                 {
                    if (IsStartOfStream)
@@ -194,7 +189,7 @@ int main (int argc, char *argv[])
                       picture.PaceStart = paces;
                       IsStartOfPicture = 0;
                    }
-                   if ((bytes > 0) && (next_null < 2))
+                   if (bytes > 0)
                    {
                       picture.TotalBytes  = picture.TotalBytes + bytes;
                       picture.PaceEnd = paces;
@@ -203,7 +198,8 @@ int main (int argc, char *argv[])
                    else
                    {
                       next_null++;
-                      if (next_null > 3) /*configuration of number of null bytes values to confirm end of picture*/
+                      //if (next_null > 4) /*configuration of number of null bytes values to confirm end of picture*/
+                      if ((next_null > 5) || IsDofidFound) /*configuration of number of null bytes values to confirm end of picture*/
                       {
                          picture.TotalPace = picture.PaceEnd - picture.PaceStart;
                          picture.Bandwidth = ((float)picture.TotalBytes*1000*1000) / ((float)picture.TotalPace*1024*1024); 
@@ -279,7 +275,7 @@ int main (int argc, char *argv[])
    if (fichier != NULL)
    {
       fprintf(fichier, "%s,default dofid,", stream_name);
-      for (i=0; i<j; i++)
+      for (i=0; i<PictureNumber; i++)
       {
          fprintf(fichier, ",%d", result[i].Dofid);
       }
@@ -353,7 +349,7 @@ int main (int argc, char *argv[])
    if (fichier != NULL)
    {
       fprintf(fichier, "%s,default dofid,", stream_name);
-      for (i=0; i<j; i++)
+      for (i=0; i<PictureNumber; i++)
       {
          fprintf(fichier, ",%d", result[i].Dofid);
       }
@@ -387,6 +383,7 @@ int main (int argc, char *argv[])
       {
          fprintf(fichier, ",%.0f", result[i].MeanPacesOver5);
       }
+      fprintf(fichier, "\n\n");
       printf("overall_sreams_details.csv saved\n");
       fclose(fichier);
    }
@@ -411,3 +408,45 @@ int main (int argc, char *argv[])
 #endif
    return 0;
 }
+
+/********************************************************************************
+ * parse current line
+ * *****************************************************************************/
+int parse_current_line (char* line)
+{
+   char  *pch;
+   int   i = 0;
+   pch = strtok (line," ,");
+   while (pch != NULL) /*Parse les champs depuis la ligne*/
+   {
+      strcpy (parsed_line[i] , pch);
+#if (DEBUG == 1)
+      printf ("\tdebug: param num %d: %s\n",i, parsed_line[i]);
+#endif
+      pch = strtok (NULL, " ,");
+      i++;
+   }
+   return 0;
+}
+
+/********************************************************************************
+ * compute dofid
+ * *****************************************************************************/
+int compute_dofid (void)
+{
+   char                 BufferDofid [7];
+   int                  Dofid = 0;
+
+   //sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
+   sprintf(BufferDofid,"%c%c%c%c\t", parsed_line[6][3],parsed_line[6][4],parsed_line[6][5],parsed_line[6][6]);
+   sscanf(BufferDofid, "%x\n", &Dofid);
+   Dofid = Dofid - 0x1000;
+#if ((DEBUG == 1) || (DEBUG_COMPUTE_DOFID == 1))
+   printf ("\t\tdebug: FPF = %s\n", parsed_line[6]);
+   //printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][2],parsed_line[6][3],parsed_line[6][4],parsed_line[6][5]);
+   printf(BufferDofid,"%c%c%c%c\n", parsed_line[6][3],parsed_line[6][4],parsed_line[6][5],parsed_line[6][6]);
+   printf("\t\t\tdebug: Dofid = %d\n", Dofid);
+#endif
+   return Dofid;
+}
+
