@@ -2,7 +2,7 @@
 # Shell script to reformat csv file to have only one column for both credit and debit amounts 
 # 
 # input: formatted CSV file from amennet xls. format is: 
-account_num; Date_operation;Description;number_piece;Date_value;debit;credit
+#account_num; Date_operation;Description;number_piece;Date_value;debit;credit
 # output QIF file for winancial
 # 
 
