@@ -23,19 +23,15 @@ export IFS="|"
 
 cat $DEFAULT_CSV | while read account_num date_op description num date_val debit credit 
 do 
+   echo "D$date_op" >> $FORMATTED_QIF
+   echo "M$description" >> $FORMATTED_QIF
+   echo "N$num" >> $FORMATTED_QIF
    if [ $debit ] ; then 
-      echo "D$date_op" >> $FORMATTED_QIF
       echo "T-$debit" | sed -e "s/ //g" >> $FORMATTED_QIF
-      echo "M$description" >> $FORMATTED_QIF
-      echo "N$num" >> $FORMATTED_QIF
-      echo "^" >> $FORMATTED_QIF
    else
-      echo "D$date_op" >> $FORMATTED_QIF
       echo "T$credit" | sed -e "s/ //g" >> $FORMATTED_QIF
-      echo "M$description" >> $FORMATTED_QIF
-      echo "N$num" >> $FORMATTED_QIF
-      echo "^" >> $FORMATTED_QIF
    fi 
+   echo "^" >> $FORMATTED_QIF
 done
 
 rm temp_formatted.csv
