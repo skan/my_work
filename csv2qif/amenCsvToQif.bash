@@ -16,24 +16,29 @@ FORMATTED_QIF=$2
 
 echo Converting $DEFAULT_CSV, writing to $FORMATTED_QIF...
 
-export IFS=";"
+awk -F'"' '{gsub(/,/,"|",$1);gsub(/,/,"|",$3);} 1' $DEFAULT_CSV > temp_formatted.csv
 
-cat $1 | while read account_num date_op description num date_val debit credit 
+DEFAULT_CSV=temp_formatted.csv
+export IFS="|"
+
+cat $DEFAULT_CSV | while read account_num date_op description num date_val debit credit 
 do 
    if [ $debit ] ; then 
       echo "D$date_op" >> $FORMATTED_QIF
-      echo "T-$debit" >> $FORMATTED_QIF
+      echo "T-$debit" | sed -e "s/ //g" >> $FORMATTED_QIF
       echo "M$description" >> $FORMATTED_QIF
       echo "N$num" >> $FORMATTED_QIF
       echo "^" >> $FORMATTED_QIF
    else
       echo "D$date_op" >> $FORMATTED_QIF
-      echo "T$credit" >> $FORMATTED_QIF
+      echo "T$credit" | sed -e "s/ //g" >> $FORMATTED_QIF
       echo "M$description" >> $FORMATTED_QIF
       echo "N$num" >> $FORMATTED_QIF
       echo "^" >> $FORMATTED_QIF
    fi 
 done
+
+rm temp_formatted.csv
 
 echo Done!
 exit 1
